@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background: radial-gradient(circle at 50% 0%, #1a0525 0%, #100318 40%, #050208 100%);
+    min-height: 100vh;
+  }
+
+  /* Custom Elegant Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgba(16, 3, 24, 0.5);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #8B0000 0%, #3B0066 100%);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #D4AF37;
+  }
+}
+
+/* Glassmorphism utility classes */
+.glass-panel {
+  background: rgba(15, 5, 25, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-glow-gold {
+  background: rgba(20, 10, 30, 0.5);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(214, 175, 85, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(214, 175, 85, 0.05);
+}
+
+.glass-panel-glow-red {
+  background: rgba(25, 5, 20, 0.5);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(139, 0, 0, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(139, 0, 0, 0.08);
+}
+
+.glass-panel-glow-purple {
+  background: rgba(15, 5, 30, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(59, 0, 102, 0.25);
+  box-shadow: 0 8px 32px 0 rgba(59, 0, 102, 0.1);
+}
+
+/* Premium text gradient utilities */
+.text-gradient-gold {
+  background: linear-gradient(135deg, #FFE89C 0%, #D4AF37 50%, #AA7C11 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-red-purple {
+  background: linear-gradient(135deg, #FF1744 0%, #8B0000 40%, #5e00b3 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Background floating particles canvas container */
+.particles-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* Book reader page transition effects */
+.page-flip-container {
+  perspective: 1500px;
+}
+
+/* Glow effects on hover */
+.hover-gold-glow:hover {
+  box-shadow: 0 0 20px rgba(214, 175, 85, 0.45);
+  border-color: rgba(214, 175, 85, 0.5);
+}
+
+.hover-red-glow:hover {
+  box-shadow: 0 0 20px rgba(255, 23, 68, 0.45);
+  border-color: rgba(255, 23, 68, 0.5);
+}
+
+.hover-purple-glow:hover {
+  box-shadow: 0 0 20px rgba(224, 64, 251, 0.45);
+  border-color: rgba(224, 64, 251, 0.5);
+}
