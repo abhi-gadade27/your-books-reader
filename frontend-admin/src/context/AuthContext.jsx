@@ -2,10 +2,10 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 
 const AuthContext = createContext();
 
-// Dynamically resolve API URL to support testing from mobile phones on the same network
+// Dynamically resolve API URL to support both local development and live production
 export const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:5000/api'
-  : `http://${window.location.hostname}:5000/api`;
+  : 'https://your-books-reader.onrender.com/api';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
