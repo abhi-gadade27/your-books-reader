@@ -2,7 +2,10 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 
 const AuthContext = createContext();
 
-export const API_URL = 'http://localhost:5000/api';
+// Dynamically resolve API URL to support testing from mobile phones on the same network
+export const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5000/api'
+  : `http://${window.location.hostname}:5000/api`;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
