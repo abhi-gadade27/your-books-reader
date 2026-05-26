@@ -98,12 +98,6 @@ const AdminLogin = () => {
             <Key size={14} />
             <span>{loading ? 'Verifying...' : 'Sign In as Admin'}</span>
           </button>
-
-          {/* Credentials Helper */}
-          <div className="text-center p-3 rounded-xl bg-theme-gold-elegant/5 border border-theme-gold-elegant/10 text-[10px] text-theme-gold-elegant">
-            <span>Credentials: </span>
-            <span className="font-bold">abhibook@0417</span> / <span className="font-bold">abhiadminbook0417</span>
-          </div>
         </form>
 
       </div>

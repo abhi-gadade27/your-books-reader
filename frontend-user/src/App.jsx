@@ -9,7 +9,8 @@ import Reader from './components/Reader';
 import AdminDashboard from './components/AdminDashboard';
 import { 
   Heart, BookOpen, Star, Mail, Award, Flame, Calendar, BookMarked, 
-  MapPin, Send, Compass, MessageSquare, ChevronRight, CheckCircle, AlertTriangle, Sparkles
+  MapPin, Send, Compass, MessageSquare, ChevronRight, CheckCircle, AlertTriangle, Sparkles,
+  Phone, Lock, User
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -1139,13 +1140,20 @@ const ContactPage = () => {
 // 9. AUTHENTICATION PAGES (LOGIN / SIGNUP / FORGOT)
 // ==================================================
 const AuthPage = ({ mode }) => {
-  const { login, signup, rememberMe, setRememberMe } = useAuth();
+  const { login, signup, sendPhoneOtp, verifyPhoneOtp, rememberMe, setRememberMe } = useAuth();
   const navigate = useNavigate();
   
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isForgot, setIsForgot] = useState(false);
+  
+  // Phone auth states
+  const [loginMethod, setLoginMethod] = useState('email'); // 'email' | 'phone'
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [otp, setOtp] = useState('');
+  const [phoneStep, setPhoneStep] = useState(1); // 1: input phone, 2: input OTP, 3: input username (if new user)
+  const [otpSentMsg, setOtpSentMsg] = useState('');
   
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -1191,6 +1199,66 @@ const AuthPage = ({ mode }) => {
     }
   };
 
+  const handleSendOtp = async (e) => {
+    e.preventDefault();
+    if (!phoneNumber || phoneNumber.trim().length < 10) {
+      setErrorMsg('Please enter a valid 10-digit phone number.');
+      return;
+    }
+    setLoading(true);
+    setErrorMsg('');
+    setOtpSentMsg('');
+    try {
+      const res = await sendPhoneOtp(phoneNumber);
+      setPhoneStep(2);
+      setOtpSentMsg(res.message || 'OTP code sent successfully!');
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to send OTP code. Please check your phone number.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    if (!otp || otp.trim().length < 6) {
+      setErrorMsg('Please enter the 6-digit OTP code.');
+      return;
+    }
+    setLoading(true);
+    setErrorMsg('');
+    try {
+      const result = await verifyPhoneOtp(phoneNumber, otp);
+      if (result && result.isNewUser) {
+        setPhoneStep(3);
+      } else {
+        navigate('/');
+      }
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to verify OTP code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCompletePhoneSignup = async (e) => {
+    e.preventDefault();
+    if (!username || !username.trim()) {
+      setErrorMsg('Username is required.');
+      return;
+    }
+    setLoading(true);
+    setErrorMsg('');
+    try {
+      await verifyPhoneOtp(phoneNumber, otp, username);
+      navigate('/');
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to register username.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md glass-panel border border-white/5 p-6 sm:p-10 rounded-3xl space-y-6">
@@ -1201,12 +1269,16 @@ const AuthPage = ({ mode }) => {
           <h2 className="text-2xl font-serif text-white font-bold">
             {isForgot 
               ? 'Reset Password' 
-              : mode === 'login' ? 'Sign In' : 'Create Account'}
+              : phoneStep === 3 
+                ? 'Choose Username' 
+                : mode === 'login' ? 'Sign In' : 'Create Account'}
           </h2>
           <p className="text-xs text-gray-500 mt-1">
             {isForgot
               ? 'Enter email to receive reset code'
-              : mode === 'login' ? 'Access your cinematic library' : 'Unlock your streak achievements'}
+              : phoneStep === 3 
+                ? 'Complete your registration'
+                : mode === 'login' ? 'Access your cinematic library' : 'Unlock your streak achievements'}
           </p>
         </div>
 
@@ -1214,6 +1286,28 @@ const AuthPage = ({ mode }) => {
           <div className="p-3 bg-theme-red-deep/20 border border-theme-red-glow/30 text-theme-red-glow rounded-xl text-xs flex items-center gap-2">
             <AlertTriangle size={14} />
             <span>{errorMsg}</span>
+          </div>
+        )}
+
+        {/* Toggle Login Method */}
+        {!isForgot && phoneStep < 3 && (
+          <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5">
+            <button
+              type="button"
+              onClick={() => { setLoginMethod('email'); setErrorMsg(''); }}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all ${loginMethod === 'email' ? 'bg-gradient-to-r from-theme-red-deep to-theme-purple-royal text-white border border-theme-gold-elegant/20' : 'text-gray-400 hover:text-white'}`}
+            >
+              <Mail size={14} />
+              <span>Email Auth</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setLoginMethod('phone'); setErrorMsg(''); }}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all ${loginMethod === 'phone' ? 'bg-gradient-to-r from-theme-red-deep to-theme-purple-royal text-white border border-theme-gold-elegant/20' : 'text-gray-400 hover:text-white'}`}
+            >
+              <Phone size={14} />
+              <span>Phone OTP</span>
+            </button>
           </div>
         )}
 
@@ -1250,7 +1344,7 @@ const AuthPage = ({ mode }) => {
               </div>
             </form>
           )
-        ) : (
+        ) : loginMethod === 'email' ? (
           <form onSubmit={handleAuthSubmit} className="space-y-4">
             {mode === 'signup' && (
               <div className="flex flex-col gap-1.5">
@@ -1317,14 +1411,6 @@ const AuthPage = ({ mode }) => {
               {loading ? 'Authenticating...' : mode === 'login' ? 'Sign In' : 'Sign Up'}
             </button>
 
-            {/* Admin hint in forms */}
-            {mode === 'login' && (
-              <div className="text-center p-2 rounded-xl bg-white/5 border border-white/5 text-[10px] text-gray-500">
-                <span>Demo Admin account: </span>
-                <span className="text-theme-gold-bright font-bold">admin</span> / <span className="text-theme-gold-bright font-bold">Admin@123</span>
-              </div>
-            )}
-
             <div className="text-center text-xs text-gray-400 pt-2 border-t border-white/5">
               {mode === 'login' ? (
                 <span>New to Your Books Reader? <Link to="/register" className="text-theme-gold-elegant hover:underline font-bold">Create Account</Link></span>
@@ -1333,6 +1419,126 @@ const AuthPage = ({ mode }) => {
               )}
             </div>
           </form>
+        ) : (
+          /* Phone login/signup UI */
+          <div className="space-y-4">
+            {phoneStep === 1 && (
+              <form onSubmit={handleSendOtp} className="space-y-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-gray-400">Phone Number</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-3 text-sm text-gray-400 font-semibold">+91</span>
+                    <input
+                      type="tel"
+                      required
+                      pattern="[0-9]{10}"
+                      placeholder="Enter 10-digit number"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                      className="w-full pl-12 pr-3 py-2.5 text-sm rounded-xl bg-theme-darker/60 border border-white/10 focus:outline-none focus:border-theme-gold-elegant text-white"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-theme-red-deep to-theme-purple-royal text-xs font-semibold text-white border border-theme-gold-elegant/20 hover:brightness-110 active:scale-[0.99] transition-all"
+                >
+                  {loading ? 'Sending Code...' : 'Send Verification Code'}
+                </button>
+              </form>
+            )}
+
+            {phoneStep === 2 && (
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                {otpSentMsg && (
+                  <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-[11px] text-center space-y-1">
+                    <p className="font-semibold">{otpSentMsg}</p>
+                    <p className="text-gray-400 text-[10px]">Simply type the code to proceed.</p>
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-gray-400">Enter OTP Code</label>
+                  <input
+                    type="text"
+                    required
+                    pattern="[0-9]{6}"
+                    maxLength="6"
+                    placeholder="Enter 6-digit OTP"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="p-2.5 text-center text-sm font-bold tracking-[0.5em] rounded-xl bg-theme-darker/60 border border-white/10 focus:outline-none focus:border-theme-gold-elegant text-white"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-theme-red-deep to-theme-purple-royal text-xs font-semibold text-white border border-theme-gold-elegant/20 hover:brightness-110 active:scale-[0.99] transition-all"
+                >
+                  {loading ? 'Verifying OTP...' : 'Verify Code & Sign In'}
+                </button>
+
+                <div className="flex justify-between items-center text-xs text-gray-400 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => { setPhoneStep(1); setOtp(''); }}
+                    className="text-theme-gold-elegant hover:underline"
+                  >
+                    Change Phone Number
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    disabled={loading}
+                    className="text-theme-gold-elegant hover:underline"
+                  >
+                    Resend OTP
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {phoneStep === 3 && (
+              <form onSubmit={handleCompletePhoneSignup} className="space-y-4">
+                <div className="p-3 bg-theme-gold-elegant/10 border border-theme-gold-elegant/20 text-theme-gold-bright rounded-xl text-[11px] text-center">
+                  Phone verified! Since you are logging in for the first time, please enter a username to complete your profile.
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs text-gray-400">Username</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. abhi27"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="p-2.5 text-sm rounded-xl bg-theme-darker/60 border border-white/10 focus:outline-none focus:border-theme-gold-elegant text-white"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-theme-red-deep to-theme-purple-royal text-xs font-semibold text-white border border-theme-gold-elegant/20 hover:brightness-110 active:scale-[0.99] transition-all"
+                >
+                  {loading ? 'Completing Signup...' : 'Complete Sign Up'}
+                </button>
+              </form>
+            )}
+
+            {phoneStep < 3 && (
+              <div className="text-center text-xs text-gray-400 pt-2 border-t border-white/5">
+                {mode === 'login' ? (
+                  <span>New to Your Books Reader? <Link to="/register" className="text-theme-gold-elegant hover:underline font-bold">Create Account</Link></span>
+                ) : (
+                  <span>Already have an account? <Link to="/login" className="text-theme-gold-elegant hover:underline font-bold">Sign In</Link></span>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
       </div>

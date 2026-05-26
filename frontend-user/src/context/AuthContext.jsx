@@ -104,6 +104,49 @@ export const AuthProvider = ({ children }) => {
     return data.user;
   };
 
+  const sendPhoneOtp = async (phoneNumber) => {
+    const res = await fetch(`${API_URL}/auth/phone-send-otp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ phoneNumber })
+    });
+    
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || 'Failed to send OTP');
+    }
+    return data;
+  };
+
+  const verifyPhoneOtp = async (phoneNumber, otp, username) => {
+    const res = await fetch(`${API_URL}/auth/phone-verify-otp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ phoneNumber, otp, username })
+    });
+    
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || 'Failed to verify OTP');
+    }
+    
+    if (data.isNewUser) {
+      return data;
+    }
+    
+    if (rememberMe && data.token) {
+      localStorage.setItem('yb_token', data.token);
+    }
+    setToken(data.token);
+    setUser(data.user);
+    fetchNotifications(data.token);
+    return data.user;
+  };
+
   const logout = () => {
     localStorage.removeItem('yb_token');
     setToken(null);
@@ -160,6 +203,8 @@ export const AuthProvider = ({ children }) => {
       setRememberMe,
       login,
       signup,
+      sendPhoneOtp,
+      verifyPhoneOtp,
       logout,
       updateProfile,
       refreshUserData,
