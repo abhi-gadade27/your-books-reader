@@ -153,11 +153,11 @@ const seedInitialBooks = async () => {
       console.log('>>> Seeding default Admin account...');
       const bcryptjs = await import('bcryptjs');
       const salt = await bcryptjs.default.genSalt(10);
-      const hashedPassword = await bcryptjs.default.hash('Admin@123', salt);
+      const hashedPassword = await bcryptjs.default.hash('abhiadminbook0417', salt);
       
       await db.Users.create({
-        username: 'Administrator',
-        email: 'admin@yourbooksreader.com',
+        username: 'abhibook@0417',
+        email: 'abhibook@0417',
         password: hashedPassword,
         role: 'admin',
         profileImage: 'https://api.dicebear.com/7.x/bottts/svg?seed=admin',
@@ -166,7 +166,7 @@ const seedInitialBooks = async () => {
         readingStreak: 0,
         badges: ['Grandmaster']
       });
-      console.log('>>> Default Admin credentials: admin / Admin@123');
+      console.log('>>> Default Admin credentials: abhibook@0417 / abhiadminbook0417');
     }
   } catch (err) {
     console.error('Error seeding data:', err);

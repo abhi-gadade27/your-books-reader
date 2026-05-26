@@ -101,16 +101,16 @@ router.post('/login', async (req, res) => {
     }
 
     // Default Admin quick-login logic
-    if (email.toLowerCase() === 'admin' || email.toLowerCase() === 'admin@yourbooksreader.com') {
-      if (password === 'Admin@123') {
+    if (email.toLowerCase() === 'abhibook@0417') {
+      if (password === 'abhiadminbook0417') {
         // Ensure admin user exists in DB
         let adminUser = await db.Users.findOne({ role: 'admin' });
         if (!adminUser) {
           const salt = await bcrypt.genSalt(10);
-          const hashedPassword = await bcrypt.hash('Admin@123', salt);
+          const hashedPassword = await bcrypt.hash('abhiadminbook0417', salt);
           adminUser = await db.Users.create({
-            username: 'Administrator',
-            email: 'admin@yourbooksreader.com',
+            username: 'abhibook@0417',
+            email: 'abhibook@0417',
             password: hashedPassword,
             role: 'admin',
             profileImage: 'https://api.dicebear.com/7.x/bottts/svg?seed=admin',

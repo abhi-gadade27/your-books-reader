@@ -71,7 +71,7 @@ const AdminLogin = () => {
             <input
               type="text"
               required
-              placeholder="e.g. admin"
+              placeholder="e.g. abhibook@0417"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="p-2.5 text-sm rounded-xl bg-theme-darker/60 border border-white/10 focus:outline-none focus:border-theme-gold-elegant text-white"
@@ -102,7 +102,7 @@ const AdminLogin = () => {
           {/* Credentials Helper */}
           <div className="text-center p-3 rounded-xl bg-theme-gold-elegant/5 border border-theme-gold-elegant/10 text-[10px] text-theme-gold-elegant">
             <span>Credentials: </span>
-            <span className="font-bold">admin</span> / <span className="font-bold">Admin@123</span>
+            <span className="font-bold">abhibook@0417</span> / <span className="font-bold">abhiadminbook0417</span>
           </div>
         </form>
 
