@@ -9,7 +9,7 @@ import {
   MapPin, Send, Compass, MessageSquare, ChevronRight, CheckCircle, AlertTriangle, Sparkles,
   Phone, Lock, User, X, Bell
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import ParticlesBackground from './components/ParticlesBackground';
 import BookCard from './components/BookCard';
 import Reader from './components/Reader';
