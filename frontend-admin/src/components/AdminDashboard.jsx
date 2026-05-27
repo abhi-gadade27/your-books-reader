@@ -316,17 +316,21 @@ const AdminDashboard = () => {
                 {/* Stats Cards Row */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                   {[
-                    { label: 'Total Users', value: stats.overview.totalUsers, color: 'border-theme-gold-elegant/20 text-theme-gold-bright' },
-                    { label: 'Total Books', value: stats.overview.totalBooks, color: 'border-theme-purple-royal/30 text-theme-purple-glow' },
-                    { label: 'Marathi Books', value: stats.overview.marathiBooksCount, color: 'border-theme-red-deep/20 text-theme-red-glow' },
-                    { label: 'Active Readers', value: stats.overview.activeReaders, color: 'border-emerald-500/20 text-emerald-400' },
-                    { label: 'Pending Feedback', value: stats.overview.pendingFeedback, color: 'border-yellow-500/20 text-yellow-400' },
-                    { label: 'Book Requests', value: stats.overview.pendingRequests, color: 'border-cyan-500/20 text-cyan-400' }
+                    { label: 'Total Users', value: stats.overview.totalUsers, tab: 'users', color: 'border-theme-gold-elegant/20 text-theme-gold-bright hover:border-theme-gold-bright/40' },
+                    { label: 'Total Books', value: stats.overview.totalBooks, tab: 'books', color: 'border-theme-purple-royal/30 text-theme-purple-glow hover:border-theme-purple-glow/55' },
+                    { label: 'Marathi Books', value: stats.overview.marathiBooksCount, tab: 'books', color: 'border-theme-red-deep/20 text-theme-red-glow hover:border-theme-red-glow/40' },
+                    { label: 'Active Readers', value: stats.overview.activeReaders, tab: 'users', color: 'border-emerald-500/20 text-emerald-400 hover:border-emerald-400/40' },
+                    { label: 'Pending Feedback', value: stats.overview.pendingFeedback, tab: 'feedback', color: 'border-yellow-500/20 text-yellow-400 hover:border-yellow-400/40' },
+                    { label: 'Book Requests', value: stats.overview.pendingRequests, tab: 'requests', color: 'border-cyan-500/20 text-cyan-400 hover:border-cyan-400/40' }
                   ].map((card, idx) => (
-                    <div key={idx} className={`glass-panel border p-5 rounded-2xl flex flex-col justify-between ${card.color}`}>
+                    <button 
+                      key={idx} 
+                      onClick={() => setActiveTab(card.tab)}
+                      className={`glass-panel border p-5 rounded-2xl flex flex-col justify-between text-left cursor-pointer transition-all active:scale-[0.98] ${card.color}`}
+                    >
                       <span className="text-xs text-gray-400 font-light">{card.label}</span>
                       <span className="text-2xl font-bold mt-2 font-serif">{card.value}</span>
-                    </div>
+                    </button>
                   ))}
                 </div>
 
