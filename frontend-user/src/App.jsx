@@ -577,6 +577,23 @@ const UserProfile = () => {
           className="glass-panel border border-white/10 p-6 rounded-3xl"
         >
           <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Edit Profile details</h3>
+          
+          {/* Live Preview Avatar */}
+          <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5 mb-6 max-w-md">
+            <img 
+              src={profileImage || 'https://api.dicebear.com/7.x/adventurer/svg?seed=default'} 
+              alt="Avatar Preview" 
+              className="w-16 h-16 rounded-full border-2 border-theme-gold-elegant/40 object-cover bg-black/25"
+              onError={(e) => {
+                e.target.src = 'https://api.dicebear.com/7.x/adventurer/svg?seed=default';
+              }}
+            />
+            <div>
+              <p className="text-xs font-bold text-white">Avatar Live Preview</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">Select a seed character below or upload an image file to instantly preview changes.</p>
+            </div>
+          </div>
+
           <form onSubmit={handleUpdateProfile} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1">

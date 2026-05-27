@@ -460,8 +460,9 @@ router.post('/upload-avatar', authMiddleware, upload.single('avatar'), async (re
       return res.status(400).json({ message: 'No file uploaded' });
     }
     
-    // Construct the file URL
-    const baseUrl = req.protocol + '://' + req.get('host');
+    // Construct the file URL supporting secure reverse proxies
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const baseUrl = protocol + '://' + req.get('host');
     const imageUrl = `${baseUrl}/uploads/${req.file.filename}`;
     
     res.json({ imageUrl });
