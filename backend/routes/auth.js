@@ -367,6 +367,18 @@ router.get('/me', authMiddleware, async (req, res) => {
   });
 });
 
+// @route   GET api/auth/status
+// @desc    Get auth service status, version, and registered routes
+router.get('/status', (req, res) => {
+  res.json({
+    status: 'ok',
+    version: '1.0.1',
+    timestamp: new Date().toISOString(),
+    routes: router.stack.map(r => r.route && { path: r.route.path, methods: Object.keys(r.route.methods) }).filter(Boolean)
+  });
+});
+
+
 // @route   POST api/auth/forgot-password
 // @desc    Forgot Password Mock
 router.post('/forgot-password', async (req, res) => {
@@ -454,7 +466,14 @@ const upload = multer({
 
 // @route   POST api/auth/upload-avatar
 // @desc    Upload profile avatar image
-router.post('/upload-avatar', authMiddleware, upload.single('avatar'), async (req, res) => {
+router.post('/upload-avatar', authMiddleware, (req, res, next) => {
+  upload.single('avatar')(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ message: err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });

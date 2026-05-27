@@ -485,16 +485,25 @@ const UserProfile = () => {
         },
         body: formData
       });
-      const data = await res.json();
+      
+      let data;
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        data = { message: text || `HTTP error ${res.status}: ${res.statusText}` };
+      }
+
       if (res.ok) {
         setProfileImage(data.imageUrl);
         alert('Profile picture uploaded successfully! Click "Save Settings" below to apply.');
       } else {
-        alert(data.message || 'File upload failed');
+        alert(data.message || `File upload failed (Status: ${res.status})`);
       }
     } catch (err) {
       console.error(err);
-      alert('Error uploading file');
+      alert(`Error uploading file: ${err.message || err}`);
     } finally {
       setUploadingImage(false);
     }
