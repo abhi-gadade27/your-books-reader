@@ -2,6 +2,9 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { db } from '../config/db.js';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your_books_reader_jwt_secret_key_123';
@@ -417,6 +420,53 @@ router.post('/update-profile', authMiddleware, async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error updating profile', error: error.message });
+  }
+});
+
+// Multer Storage Configuration for Avatar Uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = 'uploads/';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const filetypes = /jpeg|jpg|png|webp|gif/;
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = filetypes.test(file.mimetype);
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error('Only image files (jpg, jpeg, png, webp, gif) are allowed!'));
+  }
+});
+
+// @route   POST api/auth/upload-avatar
+// @desc    Upload profile avatar image
+router.post('/upload-avatar', authMiddleware, upload.single('avatar'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+    
+    // Construct the file URL
+    const baseUrl = req.protocol + '://' + req.get('host');
+    const imageUrl = `${baseUrl}/uploads/${req.file.filename}`;
+    
+    res.json({ imageUrl });
+  } catch (error) {
+    res.status(500).json({ message: 'File upload error', error: error.message });
   }
 });
 

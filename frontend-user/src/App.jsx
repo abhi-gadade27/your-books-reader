@@ -430,12 +430,22 @@ const UserProfile = () => {
   const [favCategories, setFavCategories] = useState(user?.favoriteCategories?.join(', ') || '');
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const avatarSeeds = ['Felix', 'Aneka', 'Jack', 'Zoe', 'Oliver', 'Maya', 'Sasha', 'Liam', 'Lily', 'Leo', 'Mia', 'Zack'];
 
   useEffect(() => {
     if (token) refreshUserData();
   }, [token]);
+
+  // Synchronize form states whenever user object updates or editing state opens
+  useEffect(() => {
+    if (user && isEditing) {
+      setUsername(user.username || '');
+      setProfileImage(user.profileImage || '');
+      setFavCategories(user.favoriteCategories?.join(', ') || '');
+    }
+  }, [user, isEditing]);
 
   // Synchronize active tab based on URL hash
   useEffect(() => {
@@ -458,6 +468,37 @@ const UserProfile = () => {
       setIsEditing(true);
     }
   }, [searchParams]);
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    setUploadingImage(true);
+    try {
+      const res = await fetch(`${API_URL}/auth/upload-avatar`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setProfileImage(data.imageUrl);
+        alert('Profile picture uploaded successfully! Click "Save Settings" below to apply.');
+      } else {
+        alert(data.message || 'File upload failed');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error uploading file');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
@@ -584,10 +625,22 @@ const UserProfile = () => {
                 </div>
               </div>
 
+              {/* File Upload Option */}
+              <div className="flex flex-col gap-1 sm:col-span-2">
+                <label className="text-xs text-gray-400">Upload Profile Picture (DP)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="p-1 text-sm rounded-lg bg-theme-darker/60 border border-white/10 text-white focus:outline-none focus:border-theme-gold-elegant file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-theme-gold-elegant/10 file:text-theme-gold-bright hover:file:bg-theme-gold-elegant/20 file:cursor-pointer"
+                />
+                {uploadingImage && <p className="text-[10px] text-theme-gold-bright animate-pulse mt-1">Uploading image file...</p>}
+              </div>
+
               <div className="flex flex-col gap-1 sm:col-span-2">
                 <label className="text-xs text-gray-400">Or custom profile Image URL</label>
                 <input
-                  type="url"
+                  type="text"
                   placeholder="https://images.unsplash.com/photo-..."
                   value={profileImage}
                   onChange={(e) => setProfileImage(e.target.value)}
