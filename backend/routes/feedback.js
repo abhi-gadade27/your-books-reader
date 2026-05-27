@@ -4,6 +4,18 @@ import { authMiddleware } from './auth.js';
 
 const router = express.Router();
 
+// @route   GET api/feedback/my-feedback
+// @desc    Get current user's feedbacks
+router.get('/my-feedback', authMiddleware, async (req, res) => {
+  try {
+    const feedbacks = await db.Feedbacks.find({ email: req.user.email });
+    res.json(feedbacks);
+  } catch (error) {
+    res.status(500).json({ message: 'Error retrieving your feedbacks', error: error.message });
+  }
+});
+
+
 // @route   POST api/feedback
 // @desc    Submit user feedback
 router.post('/', async (req, res) => {

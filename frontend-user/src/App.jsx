@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth, API_URL } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
-import ParticlesBackground from './components/ParticlesBackground';
-import BookCard from './components/BookCard';
-import Reader from './components/Reader';
 import AdminDashboard from './components/AdminDashboard';
 import { 
   Heart, BookOpen, Star, Mail, Award, Flame, Calendar, BookMarked, 
   MapPin, Send, Compass, MessageSquare, ChevronRight, CheckCircle, AlertTriangle, Sparkles,
-  Phone, Lock, User
+  Phone, Lock, User, X, Bell
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import ParticlesBackground from './components/ParticlesBackground';
+import BookCard from './components/BookCard';
+import Reader from './components/Reader';
+
 
 // ==================================================
 // 1. LANDING PAGE (HOME)
@@ -417,8 +418,10 @@ const MarathiBooks = () => {
 // 4. USER PROFILE & STREAKS
 // ==================================================
 const UserProfile = () => {
-  const { user, token, updateProfile, refreshUserData } = useAuth();
+  const { user, token, updateProfile, refreshUserData, notifications } = useAuth();
   const [activeSubTab, setActiveSubTab] = useState('stats');
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   
   // Profile edit state
   const [isEditing, setIsEditing] = useState(false);
@@ -426,10 +429,35 @@ const UserProfile = () => {
   const [profileImage, setProfileImage] = useState(user?.profileImage || '');
   const [favCategories, setFavCategories] = useState(user?.favoriteCategories?.join(', ') || '');
   const [loadingEdit, setLoadingEdit] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState(null);
+
+  const avatarSeeds = ['Felix', 'Aneka', 'Jack', 'Zoe', 'Oliver', 'Maya', 'Sasha', 'Liam', 'Lily', 'Leo', 'Mia', 'Zack'];
 
   useEffect(() => {
     if (token) refreshUserData();
   }, [token]);
+
+  // Synchronize active tab based on URL hash
+  useEffect(() => {
+    const hash = location.hash;
+    if (hash === '#notifications') {
+      setActiveSubTab('notifications');
+    } else if (hash === '#history' || hash === '#saved') {
+      setActiveSubTab('history');
+    } else if (hash === '#settings') {
+      setIsEditing(true);
+      setActiveSubTab('stats');
+    } else {
+      setActiveSubTab('stats');
+    }
+  }, [location.hash]);
+
+  // Check query parameters to toggle edit drawer
+  useEffect(() => {
+    if (searchParams.get('edit') === 'true') {
+      setIsEditing(true);
+    }
+  }, [searchParams]);
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
@@ -466,10 +494,6 @@ const UserProfile = () => {
       </div>
     );
   }
-
-  // Reading calculations
-  const totalBooksRead = user.readingHistory?.length || 0;
-  const completedBooks = user.readingHistory?.filter(h => h.progress >= 100).length || 0;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
@@ -524,26 +548,52 @@ const UserProfile = () => {
                   className="p-2 text-sm rounded-lg bg-theme-darker/60 border border-white/10 text-white focus:outline-none focus:border-theme-gold-elegant"
                 />
               </div>
+
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-gray-400">Profile Image Avatar URL</label>
+                <label className="text-xs text-gray-400">Favorite Categories (Comma-separated)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Fiction, Classics, Biography"
+                  value={favCategories}
+                  onChange={(e) => setFavCategories(e.target.value)}
+                  className="p-2 text-sm rounded-lg bg-theme-darker/60 border border-white/10 text-white focus:outline-none focus:border-theme-gold-elegant"
+                />
+              </div>
+
+              {/* Avatar Selector Grid */}
+              <div className="flex flex-col gap-2 sm:col-span-2">
+                <label className="text-xs text-gray-400">Select Avatar Seed (Dicebear characters)</label>
+                <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 gap-2 bg-black/25 p-3 rounded-2xl border border-white/5">
+                  {avatarSeeds.map((seed) => {
+                    const avatarUrl = `https://api.dicebear.com/7.x/adventurer/svg?seed=${seed}`;
+                    const isSelected = profileImage === avatarUrl;
+                    return (
+                      <button
+                        key={seed}
+                        type="button"
+                        onClick={() => setProfileImage(avatarUrl)}
+                        className={`aspect-square rounded-xl overflow-hidden border-2 transition-all hover:scale-105 active:scale-95 flex items-center justify-center p-1 bg-white/5 ${
+                          isSelected ? 'border-theme-gold-elegant bg-white/10 shadow-gold-glow/20' : 'border-transparent hover:border-white/20'
+                        }`}
+                        title={seed}
+                      >
+                        <img src={avatarUrl} alt={seed} className="w-full h-full object-contain" />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1 sm:col-span-2">
+                <label className="text-xs text-gray-400">Or custom profile Image URL</label>
                 <input
                   type="url"
+                  placeholder="https://images.unsplash.com/photo-..."
                   value={profileImage}
                   onChange={(e) => setProfileImage(e.target.value)}
                   className="p-2 text-sm rounded-lg bg-theme-darker/60 border border-white/10 text-white focus:outline-none focus:border-theme-gold-elegant"
                 />
               </div>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-400">Favorite Categories (Comma-separated)</label>
-              <input
-                type="text"
-                placeholder="e.g. Fiction, Classics, Biography"
-                value={favCategories}
-                onChange={(e) => setFavCategories(e.target.value)}
-                className="p-2 text-sm rounded-lg bg-theme-darker/60 border border-white/10 text-white focus:outline-none focus:border-theme-gold-elegant"
-              />
             </div>
 
             <div className="flex justify-end pt-2">
@@ -559,93 +609,278 @@ const UserProfile = () => {
         </motion.div>
       )}
 
-      {/* Tabs list inside profile */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Left Side: Stats and Streak cards */}
-        <div className="space-y-6">
-          {/* Streak details */}
-          <div className="glass-panel border border-white/5 p-6 rounded-3xl text-center space-y-4">
-            <Flame size={48} className="text-orange-500 mx-auto animate-bounce" />
-            <div>
-              <h3 className="text-3xl font-bold text-white font-serif">{user.readingStreak || 0} Days</h3>
-              <p className="text-xs text-gray-400 mt-1 uppercase tracking-wider font-semibold">Current Reading Streak</p>
+      {/* Sub-tab Navigation */}
+      <div className="flex border-b border-white/5 pb-2 overflow-x-auto gap-4 scrollbar-none">
+        {[
+          { id: 'stats', label: 'My Stats & Achievements', hash: '#stats' },
+          { id: 'notifications', label: 'Notifications', hash: '#notifications', count: notifications?.length },
+          { id: 'history', label: 'Reading Progress & History', hash: '#history' },
+        ].map((tab) => (
+          <Link
+            key={tab.id}
+            to={`/profile${tab.hash}`}
+            className={`px-4 py-2 text-xs sm:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeSubTab === tab.id
+                ? 'border-theme-gold-elegant text-theme-gold-elegant font-bold'
+                : 'border-transparent text-gray-400 hover:text-white'
+            }`}
+          >
+            <span>{tab.label}</span>
+            {tab.count ? (
+              <span className="bg-theme-red-glow/20 text-theme-red-glow text-[10px] px-2 py-0.5 rounded-full border border-theme-red-glow/25 font-bold">
+                {tab.count}
+              </span>
+            ) : null}
+          </Link>
+        ))}
+      </div>
+
+      {/* Stats and Streaks sub-tab */}
+      {activeSubTab === 'stats' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
+          
+          {/* Left Column: Streaks and Achievement Badges */}
+          <div className="space-y-6">
+            {/* Streak card */}
+            <div className="glass-panel border border-white/5 p-6 rounded-3xl text-center space-y-4">
+              <Flame size={48} className="text-orange-500 mx-auto animate-bounce" />
+              <div>
+                <h3 className="text-3xl font-bold text-white font-serif">{user.readingStreak || 0} Days</h3>
+                <p className="text-xs text-gray-400 mt-1 uppercase tracking-wider font-semibold">Current Reading Streak</p>
+              </div>
+              <p className="text-[11px] text-gray-500">Read a page daily to keep your learning streak flame alive!</p>
             </div>
-            <p className="text-[11px] text-gray-500">Read a page daily to keep your learning streak flame alive!</p>
+
+            {/* Badges Grid */}
+            <div className="glass-panel border border-white/5 p-6 rounded-3xl">
+              <h3 className="text-sm font-serif font-bold text-white mb-4 flex items-center gap-2">
+                <Award className="text-theme-gold-elegant" size={16} />
+                <span>Unlocked Achievement Badges</span>
+              </h3>
+              
+              <div className="grid grid-cols-2 gap-3">
+                {user.badges && user.badges.length > 0 ? (
+                  user.badges.map((badge, idx) => (
+                    <div key={idx} className="p-3 bg-white/5 border border-white/5 rounded-2xl text-center flex flex-col items-center justify-center">
+                      <Award size={20} className="text-theme-gold-bright mb-1" />
+                      <span className="text-[10px] text-gray-300 font-semibold truncate max-w-full">{badge}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-gray-500 text-center col-span-2">No badges unlocked yet.</p>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Badges Grid */}
-          <div className="glass-panel border border-white/5 p-6 rounded-3xl">
-            <h3 className="text-sm font-serif font-bold text-white mb-4 flex items-center gap-2">
-              <Award className="text-theme-gold-elegant" size={16} />
-              <span>Unlocked Achievement Badges</span>
-            </h3>
-            
-            <div className="grid grid-cols-2 gap-3">
-              {user.badges && user.badges.length > 0 ? (
-                user.badges.map((badge, idx) => (
-                  <div key={idx} className="p-3 bg-white/5 border border-white/5 rounded-2xl text-center flex flex-col items-center justify-center">
-                    <Award size={20} className="text-theme-gold-bright mb-1" />
-                    <span className="text-[10px] text-gray-300 font-semibold truncate max-w-full">{badge}</span>
-                  </div>
-                ))
+          {/* Right Column: Mini Reading history progress list */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="glass-panel border border-white/5 p-6 rounded-3xl space-y-4">
+              <h3 className="text-lg font-serif font-bold text-white flex items-center gap-2">
+                <BookMarked className="text-theme-purple-glow" size={18} />
+                <span>My Reading Progress Shelf</span>
+              </h3>
+
+              {user.readingHistory && user.readingHistory.length > 0 ? (
+                <div className="space-y-4">
+                  {user.readingHistory.slice(0, 3).map((item, idx) => (
+                    <div key={idx} className="flex gap-4 p-3 bg-white/5 border border-white/5 rounded-2xl hover:border-theme-gold-elegant/10 transition-colors">
+                      <img src={item.bookCover} alt={item.bookTitle} className="w-12 h-16 object-cover rounded shadow" />
+                      <div className="flex-1 flex flex-col justify-between overflow-hidden">
+                        <div>
+                          <div className="flex justify-between items-center gap-2">
+                            <h4 className="text-sm font-semibold text-white truncate font-serif">{item.bookTitle}</h4>
+                            <span className="text-[10px] text-gray-500">{new Date(item.lastRead).toLocaleDateString()}</span>
+                          </div>
+                          <p className="text-[10px] text-gray-400 mt-1">Reading progress: {item.progress}% (Chapter {item.page + 1})</p>
+                        </div>
+                        
+                        <div className="flex items-center gap-3 mt-2">
+                          <div className="flex-1 h-1.5 bg-theme-darker rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-theme-red-deep to-theme-gold-elegant rounded-full"
+                              style={{ width: `${item.progress}%` }}
+                            />
+                          </div>
+                          <Link
+                            to={`/reader/${item.bookId}`}
+                            className="text-[10px] text-theme-gold-elegant hover:underline font-bold"
+                          >
+                            Resume &rarr;
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {user.readingHistory.length > 3 && (
+                    <Link to="/profile#history" className="text-xs text-theme-gold-elegant hover:underline block text-center font-semibold pt-2">
+                      View remaining {user.readingHistory.length - 3} books in progress &rarr;
+                    </Link>
+                  )}
+                </div>
               ) : (
-                <p className="text-xs text-gray-500 text-center col-span-2">No badges unlocked yet.</p>
+                <div className="text-center py-10">
+                  <p className="text-xs text-gray-500">You haven't read any books yet. Explore catalog to start.</p>
+                </div>
               )}
             </div>
           </div>
         </div>
+      )}
 
-        {/* Right Side: Reading history progress list */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="glass-panel border border-white/5 p-6 rounded-3xl space-y-4">
-            <h3 className="text-lg font-serif font-bold text-white flex items-center gap-2">
-              <BookMarked className="text-theme-purple-glow" size={18} />
-              <span>My Reading Progress Shelf</span>
-            </h3>
+      {/* Reading history list */}
+      {activeSubTab === 'history' && (
+        <div className="glass-panel border border-white/5 p-6 sm:p-8 rounded-3xl space-y-6 animate-fade-in">
+          <h3 className="text-lg font-serif font-bold text-white flex items-center gap-2">
+            <BookMarked className="text-theme-purple-glow" size={18} />
+            <span>My Reading Progress Shelf</span>
+          </h3>
 
-            {user.readingHistory && user.readingHistory.length > 0 ? (
-              <div className="space-y-4">
-                {user.readingHistory.map((item, idx) => (
-                  <div key={idx} className="flex gap-4 p-3 bg-white/5 border border-white/5 rounded-2xl hover:border-theme-gold-elegant/10 transition-colors">
-                    <img src={item.bookCover} alt={item.bookTitle} className="w-12 h-16 object-cover rounded shadow" />
-                    <div className="flex-1 flex flex-col justify-between overflow-hidden">
-                      <div>
-                        <div className="flex justify-between items-center gap-2">
-                          <h4 className="text-sm font-semibold text-white truncate font-serif">{item.bookTitle}</h4>
-                          <span className="text-[10px] text-gray-500">{new Date(item.lastRead).toLocaleDateString()}</span>
-                        </div>
-                        <p className="text-[10px] text-gray-400 mt-1">Reading progress: {item.progress}% (Chapter {item.page + 1})</p>
+          {user.readingHistory && user.readingHistory.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {user.readingHistory.map((item, idx) => (
+                <div key={idx} className="flex gap-4 p-4 bg-white/5 border border-white/5 rounded-2xl hover:border-theme-gold-elegant/10 transition-all hover:bg-white/10">
+                  <img src={item.bookCover} alt={item.bookTitle} className="w-16 h-20 object-cover rounded shadow" />
+                  <div className="flex-1 flex flex-col justify-between overflow-hidden">
+                    <div>
+                      <div className="flex justify-between items-center gap-2">
+                        <h4 className="text-sm font-semibold text-white truncate font-serif">{item.bookTitle}</h4>
+                        <span className="text-[10px] text-gray-500">{new Date(item.lastRead).toLocaleDateString()}</span>
                       </div>
-                      
-                      <div className="flex items-center gap-3 mt-2">
-                        {/* Progress Bar */}
-                        <div className="flex-1 h-1.5 bg-theme-darker rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-gradient-to-r from-theme-red-deep to-theme-gold-elegant rounded-full"
-                            style={{ width: `${item.progress}%` }}
-                          />
-                        </div>
-                        <Link
-                          to={`/reader/${item.bookId}`}
-                          className="text-[10px] text-theme-gold-elegant hover:underline font-bold"
-                        >
-                          Resume &rarr;
-                        </Link>
+                      <p className="text-[11px] text-gray-400 mt-1">Reading progress: {item.progress}% (Chapter {item.page + 1})</p>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 mt-4">
+                      <div className="flex-1 h-1.5 bg-theme-darker rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-theme-red-deep to-theme-gold-elegant rounded-full"
+                          style={{ width: `${item.progress}%` }}
+                        />
                       </div>
+                      <Link
+                        to={`/reader/${item.bookId}`}
+                        className="text-[10px] text-theme-gold-elegant hover:underline font-bold"
+                      >
+                        Resume &rarr;
+                      </Link>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-10">
-                <p className="text-xs text-gray-500">You haven't read any books yet. Explore catalog to start.</p>
-              </div>
-            )}
-          </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-10">
+              <p className="text-xs text-gray-500">You haven't read any books yet. Explore catalog to start.</p>
+            </div>
+          )}
         </div>
+      )}
 
-      </div>
+      {/* Notifications sub-tab */}
+      {activeSubTab === 'notifications' && (
+        <div className="glass-panel border border-white/5 p-6 sm:p-8 rounded-3xl space-y-6 animate-fade-in">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-serif font-bold text-white flex items-center gap-2">
+              <Bell className="text-theme-gold-elegant" size={18} />
+              <span>Notifications Inbox</span>
+            </h3>
+            <span className="text-xs text-gray-500">{notifications?.length || 0} Messages</span>
+          </div>
+
+          {notifications && notifications.length > 0 ? (
+            <div className="space-y-3">
+              {notifications.map((notif, idx) => (
+                <div 
+                  key={notif._id || idx}
+                  onClick={() => setSelectedNotification(notif)}
+                  className="p-4 bg-white/5 border border-white/5 hover:border-theme-gold-elegant/20 hover:bg-white/10 rounded-2xl transition-all cursor-pointer flex justify-between items-start gap-4"
+                >
+                  <div className="space-y-1 overflow-hidden">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-sm font-semibold text-white">{notif.title}</h4>
+                      <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                        notif.type === 'announcement'
+                          ? 'bg-purple-500/20 text-purple-300 border border-purple-500/25'
+                          : notif.type === 'reminder'
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/25'
+                            : 'bg-blue-500/20 text-blue-300 border border-blue-500/25'
+                      }`}>
+                        {notif.type || 'update'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400 truncate max-w-md sm:max-w-xl md:max-w-2xl">{notif.message}</p>
+                  </div>
+                  <span className="text-[10px] text-gray-500 whitespace-nowrap">
+                    {new Date(notif.createdAt || Date.now()).toLocaleDateString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-10">
+              <p className="text-xs text-gray-500">Your inbox is clear! No notifications received.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Notification Details Modal */}
+      <AnimatePresence>
+        {selectedNotification && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-lg glass-panel border border-white/10 p-6 sm:p-8 rounded-3xl space-y-6 relative"
+            >
+              <button 
+                onClick={() => setSelectedNotification(null)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-white p-1.5 rounded-full hover:bg-white/5 transition-all"
+              >
+                <X size={18} />
+              </button>
+              
+              <div className="space-y-4 text-left">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-theme-gold-elegant/10 border border-theme-gold-elegant/20 text-theme-gold-bright rounded-2xl">
+                    <Bell size={24} className="animate-pulse" />
+                  </div>
+                  <div>
+                    <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase inline-block mb-1.5 ${
+                      selectedNotification.type === 'announcement'
+                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/25'
+                        : selectedNotification.type === 'reminder'
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/25'
+                          : 'bg-blue-500/20 text-blue-300 border border-blue-500/25'
+                    }`}>
+                      {selectedNotification.type || 'update'}
+                    </span>
+                    <h3 className="text-xl font-bold text-white font-serif">{selectedNotification.title}</h3>
+                  </div>
+                </div>
+
+                <div className="text-[10px] text-gray-500 border-b border-white/5 pb-2">
+                  Received on {new Date(selectedNotification.createdAt || Date.now()).toLocaleString()}
+                </div>
+
+                <p className="text-sm text-gray-300 leading-relaxed font-light whitespace-pre-wrap">
+                  {selectedNotification.message}
+                </p>
+              </div>
+
+              <div className="flex justify-end pt-4">
+                <button
+                  onClick={() => setSelectedNotification(null)}
+                  className="px-6 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-white border border-white/10"
+                >
+                  Close Message
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </div>
   );
@@ -737,10 +972,42 @@ const WishlistPage = () => {
 // 6. FEEDBACK SYSTEM
 // ==================================================
 const FeedbackPage = () => {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [formData, setFormData] = useState({ name: user?.username || '', email: user?.email || '', message: '', rating: 5 });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [myFeedbacks, setMyFeedbacks] = useState([]);
+  const [fetchingFeedbacks, setFetchingFeedbacks] = useState(false);
+
+  const fetchMyFeedbacks = async () => {
+    if (!token) return;
+    setFetchingFeedbacks(true);
+    try {
+      const res = await fetch(`${API_URL}/feedback/my-feedback`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMyFeedbacks(data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setFetchingFeedbacks(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMyFeedbacks();
+  }, [token]);
+
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({ ...prev, name: user.username, email: user.email }));
+    }
+  }, [user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -754,6 +1021,7 @@ const FeedbackPage = () => {
       if (res.ok) {
         setSubmitted(true);
         setFormData({ name: user?.username || '', email: user?.email || '', message: '', rating: 5 });
+        fetchMyFeedbacks();
       }
     } catch (err) {
       console.error(err);
@@ -763,7 +1031,7 @@ const FeedbackPage = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-12">
+    <div className="max-w-3xl mx-auto px-4 py-12 space-y-8">
       <div className="glass-panel border border-white/5 p-6 sm:p-10 rounded-3xl space-y-6">
         <div className="text-center">
           <MessageSquare className="text-theme-gold-elegant w-10 h-10 mx-auto mb-3" />
@@ -850,6 +1118,65 @@ const FeedbackPage = () => {
           </form>
         )}
       </div>
+
+      {/* Feedback History View */}
+      {user && (
+        <div className="glass-panel border border-white/5 p-6 sm:p-10 rounded-3xl space-y-6">
+          <h2 className="text-xl font-serif text-white font-bold flex items-center gap-2">
+            <MessageSquare className="text-theme-gold-elegant" size={20} />
+            <span>My Feedback History</span>
+          </h2>
+          
+          {fetchingFeedbacks ? (
+            <p className="text-xs text-gray-500 animate-pulse">Loading feedback history...</p>
+          ) : myFeedbacks.length > 0 ? (
+            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              {myFeedbacks.map((f, idx) => (
+                <div key={f._id || idx} className="p-4 bg-white/5 border border-white/5 rounded-2xl space-y-3">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            size={12}
+                            className={star <= f.rating ? 'fill-theme-gold-elegant text-theme-gold-elegant' : 'text-gray-600'}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-[10px] text-gray-500">
+                        {new Date(f.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                      f.resolved 
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' 
+                        : 'bg-amber-500/20 text-amber-400 border border-amber-500/20'
+                    }`}>
+                      {f.resolved ? 'Replied' : 'Pending Review'}
+                    </span>
+                  </div>
+                  
+                  <p className="text-xs text-gray-300 leading-relaxed italic">
+                    "{f.message}"
+                  </p>
+
+                  {f.reply && (
+                    <div className="p-3 bg-theme-gold-elegant/10 border border-theme-gold-elegant/20 rounded-xl space-y-1">
+                      <p className="text-[10px] font-bold text-theme-gold-bright uppercase tracking-wider">Admin Response:</p>
+                      <p className="text-xs text-gray-200 font-light">
+                        {f.reply}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500">You haven't submitted any feedback yet.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -1289,23 +1616,57 @@ const AuthPage = ({ mode }) => {
           </div>
         )}
 
+        {/* Login vs Signup Tabs */}
+        {!isForgot && phoneStep < 3 && (
+          <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5">
+            <button
+              type="button"
+              onClick={() => {
+                navigate('/login');
+                setErrorMsg('');
+              }}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+                mode === 'login'
+                  ? 'bg-gradient-to-r from-theme-red-deep to-theme-purple-royal text-white border border-theme-gold-elegant/20'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Sign In (Login)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                navigate('/register');
+                setErrorMsg('');
+              }}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+                mode === 'signup'
+                  ? 'bg-gradient-to-r from-theme-red-deep to-theme-purple-royal text-white border border-theme-gold-elegant/20'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Create Account (Signup)
+            </button>
+          </div>
+        )}
+
         {/* Toggle Login Method */}
         {!isForgot && phoneStep < 3 && (
           <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5">
             <button
               type="button"
               onClick={() => { setLoginMethod('email'); setErrorMsg(''); }}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all ${loginMethod === 'email' ? 'bg-gradient-to-r from-theme-red-deep to-theme-purple-royal text-white border border-theme-gold-elegant/20' : 'text-gray-400 hover:text-white'}`}
+              className={`flex-1 py-2 rounded-xl text-[11px] font-semibold flex items-center justify-center gap-2 transition-all ${loginMethod === 'email' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
             >
-              <Mail size={14} />
+              <Mail size={12} />
               <span>Email Auth</span>
             </button>
             <button
               type="button"
               onClick={() => { setLoginMethod('phone'); setErrorMsg(''); }}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all ${loginMethod === 'phone' ? 'bg-gradient-to-r from-theme-red-deep to-theme-purple-royal text-white border border-theme-gold-elegant/20' : 'text-gray-400 hover:text-white'}`}
+              className={`flex-1 py-2 rounded-xl text-[11px] font-semibold flex items-center justify-center gap-2 transition-all ${loginMethod === 'phone' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}
             >
-              <Phone size={14} />
+              <Phone size={12} />
               <span>Phone OTP</span>
             </button>
           </div>
@@ -1377,7 +1738,7 @@ const AuthPage = ({ mode }) => {
               <input
                 type="password"
                 required
-                placeholder="••••••••"
+                placeholder="e.g. Password@123 (min 8 chars)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="p-2.5 text-sm rounded-xl bg-theme-darker/60 border border-white/10 focus:outline-none focus:border-theme-gold-elegant text-white"
